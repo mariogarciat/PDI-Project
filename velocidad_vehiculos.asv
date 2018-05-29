@@ -98,14 +98,9 @@ while (frameId < numFrames)
             entradas = entradas - 1;
             % Cambia el valor de la bandera
             vehiculoPasandoDown = 1;
-            
-        % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
-        % se cambia la bandera
         elseif(diferenciaDown <= umbralInferior && vehiculoPasandoDown == 1)
             vehiculoPasandoDown = 0;
         end
-    
-    % Si no hay vehiculos en el area se desactiva la bandera
     elseif(entradas == 0)
         vehiculoPasandoDown = 0;
     end
@@ -140,8 +135,6 @@ while (frameId < numFrames)
 %     figure(4); imshow([diferenciaDown diferenciaUp]); impixelinfo;
     vehiculoPasandoDown
     vehiculoPasandoUp
-    
-    % Itera el numero del frame
     frameId = frameId + 1
 end
 
