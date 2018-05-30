@@ -153,6 +153,13 @@ while(frameId < numFrames-framesParaPromediar)
     % se cambia la bandera
     elseif(promedioAbajoIzq <= umbral && vehiculoPasandoIzqAbajo == 1)
         vehiculoPasandoIzqAbajo = 0;
+        
+        % Calcula la velocidad del auto
+        frameEntrada = qArriba.poll();
+        frames = frameId - frameEntrada;
+        tiempoSeg = frames/24;
+        tiempoHoras = tiempoSeg/3600;
+        velocidad = 0.012 /tiempo;
     end
     
     %A la derecha
@@ -169,10 +176,12 @@ while(frameId < numFrames-framesParaPromediar)
     if(promedioAbajoDer > umbral && vehiculoPasandoDerAbajo == 0)
         entradasCarrilInferior = entradasCarrilInferior - 1; % Suma uno al contador de vehiculos que entran en el area de analisis
         vehiculoPasandoDerAbajo = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
-        frameEntrada = q.poll();
+        
+        % Calcula la velocidad del auto
+        frameEntrada = qAbajo.poll();
         frames = frameId - frameEntrada;
         tiempoSeg = frames/24;
-        tiempoHoras = tiempoSeg/3600
+        tiempoHoras = tiempoSeg/3600;
         velocidad = 0.012 /tiempo;
         
     % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara

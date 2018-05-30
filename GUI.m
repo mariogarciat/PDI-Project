@@ -220,6 +220,16 @@ while(frameId < handles.numFrames-framesParaPromediar)
         entradasCarrilSuperior = entradasCarrilSuperior - 1; % resta uno al contador de vehiculos que entran en el area de analisis
         vehiculoPasandoDerArriba = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
         
+        % Calcula la velocidad del auto
+        frameEntrada = qArriba.poll();
+        frames = frameId - frameEntrada;
+        tiempoSeg = frames/24;
+        tiempoHoras = tiempoSeg/3600;
+        velocidad = 0.012 /tiempoHoras;
+        
+        disp(velocidad);
+        set(handles.textSpeed, 'String', velocidad);
+        
     % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
     % se cambia la bandera
     elseif(promedioArribaDer <= handles.umbral && vehiculoPasandoDerArriba == 1)
@@ -229,13 +239,14 @@ while(frameId < handles.numFrames-framesParaPromediar)
     if(promedioAbajoDer > handles.umbral && vehiculoPasandoDerAbajo == 0)
         entradasCarrilInferior = entradasCarrilInferior - 1; % Suma uno al contador de vehiculos que entran en el area de analisis
         vehiculoPasandoDerAbajo = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
-        frameEntrada = q.poll();
+       
+        % Calcula la velocidad del auto
+        frameEntrada = qAbajo.poll();
         frames = frameId - frameEntrada;
-        disp(frames);
         tiempoSeg = frames/24;
         tiempoHoras = tiempoSeg/3600;
-        disp(tiempoHoras);
-        velocidad = 0.012 /tiempo;
+        velocidad = 0.012 /tiempoHoras;
+        
         disp(velocidad);
         set(handles.textSpeed, 'String', velocidad);
         
