@@ -51,10 +51,16 @@ function GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to GUI (see VARARGIN)
-
-handles.video = VideoReader('video.mp4'); % Abre el archivo de video
+import java.util.LinkedList
+handles.qArriba = LinkedList();
+handles.qAbajo = LinkedList();
+handles.video = VideoReader('video2.mp4'); % Abre el archivo de video
 handles.numFrames = get(handles.video,'NumberOfFrames');
-handles.frameid = 1;
+handles.shot = read(handles.video,1);
+handles.umbral = 25000;
+handles.umbralderecha = 250000;
+[fil,col,cap] = size(handles.shot);
+
 
 % Choose default command line output for GUI
 handles.output = hObject;
@@ -84,17 +90,166 @@ function btnBegin_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 disp('dssfagsfsfdg');
-% axes(handles.axesIm);
-% frame = read(handles.video, handles.frameid);
-% imshow(frame);
-while(handles.frameid < handles.numFrames)
-    frame = read(handles.video, handles.frameid);
+
+maskDerArriba = handles.shot * 0; % Crea en negro la mascara derecha del carril superior
+maskIzqArriba = handles.shot * 0; % Crea en negro la mascara izquierda del carril superior
+
+maskDerAbajo = handles.shot * 0; % Crea en negro la mascara derecha del carril inferior
+maskIzqAbajo = handles.shot * 0; % Crea en negro la mascara izquierda del carril inferior
+
+maskDerArriba(480:630, 1800:1840, :) = 150; % Define el area a analizar de la parte derecha del frame del carril superior
+maskIzqArriba(480:630, 90:130, :) = 150; % Define el area a analizar de la parte izquierda del frame del carril superior
+
+maskDerAbajo(690:850, 1800:1840, :) = 150; % Define el area a analizar de la parte derecha del frame del carril inferior
+maskIzqAbajo(690:850, 90:130, :) = 150; % Define el area a analizar de la parte izquierda del frame del carril inferior
+
+
+% TOMA DE INDICES DE LAS MASCARAS
+indDerArriba = find(maskDerArriba ~= 0);
+indIzqArriba = find(maskIzqArriba ~= 0);
+indDerAbajo = find(maskDerAbajo ~= 0);
+indIzqAbajo = find(maskIzqAbajo ~= 0); 
+
+% CREA COPIAS DE LAS MASCARAS PARA DOS FRAMES A COMPARAR 
+% (ACTUAL Y SIGUIENTE)
+maskDerArribaActual = maskDerArriba;
+maskIzqArribaActual = maskIzqArriba;
+maskDerAbajoActual = maskDerAbajo;
+maskIzqAbajoActual = maskIzqAbajo;
+
+maskDerArribaSiguiente = maskDerArriba;
+maskIzqArribaSiguiente = maskIzqArriba;
+maskDerAbajoSiguiente = maskDerAbajo;
+maskIzqAbajoSiguiente = maskIzqAbajo;
+maskIzqArriba(indIzqArriba) = handles.shot(indIzqArriba);
+maskDerArriba(indDerArriba) = handles.shot(indDerArriba);
+maskIzqAbajo(indIzqArriba) = handles.shot(indIzqArriba);
+maskDerAbajo(indDerAbajo) = handles.shot(indDerAbajo);
+
+
+entradasCarrilSuperior = 0; % Contador de autos que entran en el carril superior
+entradasCarrilInferior = 0; % Contador de autos que entran en el carril inferior
+
+vehiculoPasandoDerArriba = 0; % Bandera para saber si un auto esta pasando por la mascara derecha del carril superior
+vehiculoPasandoIzqArriba = 0; % Bandera para saber si un auto esta pasando por la mascara izquierda del carril superior
+vehiculoPasandoDerAbajo = 0; % Bandera para saber si un auto esta pasando por la mascara derecha del carril inferior
+vehiculoPasandoIzqAbajo = 0; % Bandera para saber si un auto esta pasando por la mascara izquierda del carril inferior
+
+frameId = 1; % Frame de inicio del video
+velocidad = 0;
+framesParaPromediar = 5;
+
+while(frameId < handles.numFrames-framesParaPromediar)
+    sumaIzqArriba = 0;
+    sumaIzqAbajo = 0;
+    sumaDerArriba = 0;
+    sumaDerAbajo = 0;
     
-    imshow(frame, 'Parent',handles.axesIm);
+    promedioArribaIzq = 0;
+    promedioAbajoIzq = 0;
+    promedioArribaDer = 0;
+    promedioAbajoDer = 0;
+    frameActual = read(handles.video, frameId);
+
+    
+    for i = 0:framesParaPromediar
+        frameSiguiente = read(handles.video, frameId + i+1);
+        
+        maskIzqArribaActual(indIzqArriba) = frameActual(indIzqArriba);
+        maskIzqAbajoActual(indIzqAbajo) = frameActual(indIzqAbajo);
+        maskIzqArribaSiguiente(indIzqArriba) = frameSiguiente(indIzqArriba);
+        maskIzqAbajoSiguiente(indIzqAbajo) = frameSiguiente(indIzqAbajo);
+        
+        diferenciaArribaIzq = maskIzqArribaActual - maskIzqArribaSiguiente;
+        diferenciaAbajoIzq = maskIzqAbajoActual - maskIzqAbajoSiguiente;
+        
+        sumaIzqArriba = sumaIzqArriba + sum(sum(sum(diferenciaArribaIzq)));
+        sumaIzqAbajo = sumaIzqAbajo + sum(sum(sum(diferenciaAbajoIzq)));
+        
+        if(entradasCarrilSuperior > 0 && vehiculoPasandoDerArriba == 0)
+            maskDerArribaActual(indDerArriba) = frameActual(indDerArriba);
+            maskDerArribaSiguiente(indDerArriba) = frameSiguiente(indDerArriba);
+            
+            diferenciaArribaDer = maskDerArribaActual - maskDerArribaSiguiente;
+            
+            sumaDerArriba = sumaDerArriba + sum(sum(sum(diferenciaArribaDer)));
+        end
+        
+        if(entradasCarrilInferior > 0 && vehiculoPasandoDerAbajo == 0)
+            maskDerArribaActual(indDerArriba) = frameActual(indDerArriba);
+            maskDerArribaSiguiente(indDerArriba) = frameSiguiente(indDerArriba);
+            
+            diferenciaArribaDer = maskDerArribaActual - maskDerArribaSiguiente;
+            
+            sumaDerArriba = sumaDerArriba + sum(sum(sum(diferenciaArribaDer)));
+        end
+        
+        frameActual = frameSiguiente;
+    end
+    promedioArribaIzq = sumaIzqArriba / framesParaPromediar;
+    promedioAbajoIzq = sumaIzqAbajo / framesParaPromediar;
+    
+    promedioArribaDer = sumaDerArriba / framesParaPromediar;
+    promedioAbajoDer = sumaDerAbajo / framesParaPromediar;
+    
+    if(promedioArribaIzq > handles.umbral && vehiculoPasandoIzqArriba == 0)
+        entradasCarrilSuperior = entradasCarrilSuperior + 1; % Suma uno al contador de vehiculos que entran en el area de analisis
+        vehiculoPasandoIzqArriba = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
+        handles.qArriba.add(frameId);
+        
+    % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
+    % se cambia la bandera
+    elseif(promedioArribaIzq <= handles.umbral && vehiculoPasandoIzqArriba == 1)
+        vehiculoPasandoIzqArriba = 0;
+    end
+    
+    % Igual para el carril inferior
+    if(promedioAbajoIzq > handles.umbral && vehiculoPasandoIzqAbajo == 0)
+        entradasCarrilInferior = entradasCarrilInferior + 1; % Suma uno al contador de vehiculos que entran en el area de analisis
+        vehiculoPasandoIzqAbajo = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
+        handles.qAbajo.add(frameId);
+        
+    % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
+    % se cambia la bandera
+    elseif(promedioAbajoIzq <= handles.umbral && vehiculoPasandoIzqAbajo == 1)
+        vehiculoPasandoIzqAbajo = 0;
+    end
+    
+    %A la derecha
+    if(promedioArribaDer > handles.umbral && vehiculoPasandoDerArriba == 0)
+        entradasCarrilSuperior = entradasCarrilSuperior - 1; % resta uno al contador de vehiculos que entran en el area de analisis
+        vehiculoPasandoDerArriba = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
+        
+    % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
+    % se cambia la bandera
+    elseif(promedioArribaDer <= handles.umbral && vehiculoPasandoDerArriba == 1)
+        vehiculoPasandoDerArriba = 0;
+    end
+    
+    if(promedioAbajoDer > handles.umbral && vehiculoPasandoDerAbajo == 0)
+        entradasCarrilInferior = entradasCarrilInferior - 1; % Suma uno al contador de vehiculos que entran en el area de analisis
+        vehiculoPasandoDerAbajo = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
+        frameEntrada = q.poll();
+        frames = frameId - frameEntrada;
+        disp(frames);
+        tiempoSeg = frames/24;
+        tiempoHoras = tiempoSeg/3600;
+        disp(tiempoHoras);
+        velocidad = 0.012 /tiempo;
+        disp(velocidad);
+        set(handles.textSpeed, 'String', velocidad);
+        
+    % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
+    % se cambia la bandera
+    elseif(promedioAbajoDer <= handles.umbral && vehiculoPasandoDerAbajo == 1)
+        vehiculoPasandoDerAbajo = 0;
+    end
+    
+    imshow(frameActual, 'Parent',handles.axesIm);
 %     imshow(handles.frame,'Parent', handles.axesIm);
-    disp(handles.frameid);
+%     disp(frameId);
     pause(0.001);
-    handles.frameid = handles.frameid+1;
+    frameId = frameId+1;
 end
 
 % --- Executes on button press in btnFinish.
