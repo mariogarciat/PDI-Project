@@ -22,7 +22,7 @@ function varargout = GUI(varargin)
 
 % Edit the above text to modify the response to help GUI
 
-% Last Modified by GUIDE v2.5 29-May-2018 18:42:06
+% Last Modified by GUIDE v2.5 30-May-2018 03:34:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -196,6 +196,7 @@ while(frameId < handles.numFrames-framesParaPromediar)
         entradasCarrilSuperior = entradasCarrilSuperior + 1; % Suma uno al contador de vehiculos que entran en el area de analisis
         vehiculoPasandoIzqArriba = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
         handles.qArriba.add(frameId);
+        set(handles.textVehicles, 'String', handles.qArriba.size());
         
     % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
     % se cambia la bandera
@@ -221,11 +222,13 @@ while(frameId < handles.numFrames-framesParaPromediar)
         vehiculoPasandoDerArriba = 1; % Cambia la bandera para no seguir sumando vehiculos sin necesidad
         
         % Calcula la velocidad del auto
-        frameEntrada = qArriba.poll();
+        frameEntrada = handles.qArriba.poll();
+        set(handles.textVehicles, 'String', handles.qArriba.size());
         frames = frameId - frameEntrada;
         tiempoSeg = frames/24;
         tiempoHoras = tiempoSeg/3600;
-        velocidad = 0.012 /tiempoHoras;
+        disp(tiempoHoras);
+        velocidad = 0.012 ./tiempoHoras;
         
         disp(velocidad);
         set(handles.textSpeed, 'String', velocidad);
@@ -243,12 +246,14 @@ while(frameId < handles.numFrames-framesParaPromediar)
         % Calcula la velocidad del auto
         frameEntrada = qAbajo.poll();
         frames = frameId - frameEntrada;
-        tiempoSeg = frames/24;
+        tiempoSeg = frames ./ 24;
         tiempoHoras = tiempoSeg/3600;
         velocidad = 0.012 /tiempoHoras;
         
         disp(velocidad);
-        set(handles.textSpeed, 'String', velocidad);
+        
+        
+%         set(handles.textSpeed, 'String', velocidad);
         
     % Si no se supera el umbral y si ya habia un vehiculo sobre la mascara
     % se cambia la bandera
