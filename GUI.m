@@ -58,8 +58,7 @@ handles.video = VideoReader('video2.mp4'); % Abre el archivo de video
 handles.numFrames = get(handles.video,'NumberOfFrames');
 handles.shot = read(handles.video,1);
 handles.umbral = 25000;
-handles.umbralderecha = 250000;
-[fil,col,cap] = size(handles.shot);
+imshow(handles.shot, 'Parent',handles.axesIm);
 
 
 % Choose default command line output for GUI
@@ -137,7 +136,7 @@ vehiculoPasandoIzqAbajo = 0; % Bandera para saber si un auto esta pasando por la
 
 frameId = 1; % Frame de inicio del video
 velocidad = 0;
-framesParaPromediar = 5;
+framesParaPromediar = 7;
 
 while(frameId < handles.numFrames-framesParaPromediar)
     sumaIzqArriba = 0;
